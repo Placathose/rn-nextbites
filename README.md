@@ -11,6 +11,53 @@ NextBite is a mobile application (built using Expo React Native) that helps user
 - **Backend & Data Persistence:** Drizzle ORM (for data modeling and queries) and Turso (or Supabase) as the database.
 - **Media Storage:** Cloudinary (for storing images and videos (e.g., recipe images, cooking videos)).
 
+### Database Configuration Note
+When setting up Drizzle ORM with Turso, we encountered a type compatibility issue with the latest version of `drizzle-kit`. The error `Type '"turso"' is not assignable to type '"d1-http"'` occurred because newer versions of `drizzle-kit` have different driver type definitions. To resolve this, we:
+
+1. Installed a specific version of `drizzle-kit` (0.20.14) that supports the Turso driver:
+   ```bash
+   npm install drizzle-kit@0.20.14
+   ```
+2. Used the correct configuration in `drizzle.config.ts`:
+   ```typescript
+   {
+     driver: 'turso',
+     dbCredentials: {
+       url: process.env.DATABASE_URL || 'file:local.db',
+       authToken: process.env.DATABASE_AUTH_TOKEN,
+     }
+   }
+   ```
+
+This ensures proper type checking and compatibility with Turso database.
+
+### Drizzle-Kit Migration Issue & Solution
+While migrating our schema to Turso using Drizzle ORM, we encountered several issues with `drizzle-kit` versions and configuration:
+
+- **Problem:**
+  - The latest `drizzle-kit` required a `dialect` property and did not recognize the `driver: 'turso'` property from older documentation.
+  - Running migration commands resulted in errors about missing or invalid `driver`/`dialect` values, and deprecated command usage.
+- **Solution:**
+  1. We updated `drizzle-kit` to the latest version:
+     ```bash
+     npm install drizzle-kit@latest
+     ```
+  2. We updated `drizzle.config.ts` to use the new format:
+     ```typescript
+     export default {
+       schema: './db/schema/index.ts',
+       out: './db/migrations',
+       dialect: 'turso',
+       dbCredentials: {
+         url: process.env.DATABASE_URL || 'file:local.db',
+         authToken: process.env.DATABASE_AUTH_TOKEN,
+       },
+     }
+     ```
+  3. We updated our npm scripts to use the new `drizzle-kit generate` and `drizzle-kit push` commands.
+
+After these changes, migration and push commands worked as expected, and our schema was successfully applied to the Turso database.
+
 ### MVP Tasks & User Flows
 
 #### 1. Onboarding & User Profile
